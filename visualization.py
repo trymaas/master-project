@@ -2,15 +2,18 @@ import pandas as pd
 import json
 import streamlit as st
 import os
-import plotly.express as px
+import plotly_express as px
 import numpy as np
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 def json_reader_content(json_file):
-    with open(json_file, 'r') as test:
-       data = json.loads(test.read())
+    bytes_data = json_file.read()
+    string_data = bytes_data.decode("utf-8")
+    data = json.loads(string_data)
+
     if (len(data) == 1):
         return
     df1 = pd.json_normalize(data["ads_seen"])
@@ -19,10 +22,12 @@ def json_reader_content(json_file):
     return df1, df2, df3
 
 def json_reader_searches(json_file):
-    with open (json_file, 'r') as test:
-        data = json.loads(test.read())
-    
+
+    bytes_data = json_file.read()
+    string_data = bytes_data.decode("utf-8")
+    data = json.loads(string_data)
     df = pd.json_normalize(data["main_search_history"])
+
     return df
 
 def visualize_searches(json_files):
@@ -92,47 +97,42 @@ def make_cloud(content):
     plt.show()
     st.pyplot()
 
-def get_user_data(rootdir):
+def get_user_data(files):
     data_list = []
     option = st.sidebar.selectbox('What data would like to have displayed?',
                     ('', 'Ads, posts and videos seen', 'Your searches',
                     'Location data'))
-    for subdir, dirs, files in os.walk(rootdir):
-        for fil in files:
-            if option == 'Ads, posts and videos seen':
-                if fil == 'seen_content.json':
-                    data = os.path.join(subdir, fil)
-                    data_list.append(data)
-            elif option == 'Your searches':
-                if fil == 'searches.json':
-                    data = os.path.join(subdir, fil)
-                    data_list.append(data)
+    for fil in files:
+        if option == 'Ads, posts and videos seen':
+            if fil.name == 'seen_content.json':
+                data_list.append(fil)
+        elif option == 'Your searches':
+            if fil.name == 'searches.json':
+                data_list.append(fil)
 
     return data_list, option
 
-def file_selector(folder_path='.'):
-    st.write("Please see sidebar to the left for available options")
-    st.write("The plots will appear below.")
-    file_names = os.listdir(folder_path)
-    selected_filename = st.sidebar.selectbox("Please select the folder where your instagram data is stored", file_names)
-    return os.path.join(folder_path, selected_filename)
+def select_files():
+    files = st.file_uploader("Upload instagram files", accept_multiple_files=True)
+    return files
 
 def visualize_location():
     st.write("This is just a test for now!")
     df = pd.DataFrame(
         np.random.randn(1000, 2)/[50, 50] + [59.91, 10.75],
         columns=['lat', 'lon'])
-    #st.write(df)
     st.map(df)
 
 if __name__ == "__main__":
+
     st.title("An Instagram data dump inspection")
     try:
-        rootdir = file_selector()
+        files = select_files()
     except FileNotFoundError:
         st.error("Not correct file, please choose another")
-
-    data_list, option = get_user_data(rootdir)
+    st.write("See sidebar to the left for options")
+    st.write("Your plots will appear below.")
+    data_list, option = get_user_data(files)
 
     if option == 'Ads, posts and videos seen':
         visualize_seen_content(data_list)
