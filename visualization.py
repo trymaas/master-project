@@ -6,7 +6,6 @@ import plotly.express as px
 import numpy as np
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
-from pathlib import Path
 
 
 def json_reader_content(json_file):
@@ -127,8 +126,6 @@ def visualize_location():
     st.map(df)
 
 if __name__ == "__main__":
-    #md = Path('README.md').read_text()
-    #st.markdown(md, unsafe_allow_html=True)
     st.title("An Instagram data dump inspection")
     try:
         rootdir = file_selector()
