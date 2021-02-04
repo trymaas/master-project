@@ -39,7 +39,7 @@ def visualize_searches(json_files):
     try:
         searches = pd.concat(searches)
     except ValueError:
-        st.error("Not correct file, please choose another")
+        st.error("Not correct file(s), please choose another")
         return
 
     total_searches = searches["search_click"].value_counts()
@@ -55,10 +55,14 @@ def visualize_seen_content(json_files):
         ads.append(df1)
         posts.append(df2)
         videos.append(df3)
+    try:
+        ads = pd.concat(ads)
+        posts = pd.concat(posts)
+        videos = pd.concat(videos)
+    except ValueError:
+        st.error("Not correct file(s), please choose another")
+        return
     
-    ads = pd.concat(ads)
-    posts = pd.concat(posts)
-    videos = pd.concat(videos)
     if st.sidebar.checkbox("Show all ads seen"):
         show_content(ads, True)
     elif st.sidebar.checkbox("Show all posts seen"):
