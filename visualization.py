@@ -128,6 +128,7 @@ def visualize_location():
 if __name__ == "__main__":
 
     st.title("An Instagram data dump inspection")
+    st.write("All uploaded data is ONLY stored in RAM. It is not saved anywhere. That means that it is cleared whenever the app re-runs, you remove the uploaded files or the application is closed.")
     try:
         files = select_files()
     except FileNotFoundError:
