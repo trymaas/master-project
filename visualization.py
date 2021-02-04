@@ -128,6 +128,7 @@ if __name__ == "__main__":
         files = select_files()
     except FileNotFoundError:
         st.error("Not correct file, please choose another")
+    st.write("If you have a folder with Instagram files, drag and drop the whole folder to upload all the files")
     st.write("See sidebar to the left for options")
     st.write("Your plots will appear below.")
     data_list, option = get_user_data(files)
