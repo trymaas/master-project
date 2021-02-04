@@ -49,7 +49,6 @@ def visualize_searches(json_files):
     st.plotly_chart(fig)
 
 def visualize_seen_content(json_files):
-    st.title("All content seen on instagram")
     ads, posts, videos = [], [], []
     for item in json_files:
         df1, df2, df3 = json_reader_content(item)
@@ -60,11 +59,11 @@ def visualize_seen_content(json_files):
     ads = pd.concat(ads)
     posts = pd.concat(posts)
     videos = pd.concat(videos)
-    if st.checkbox("Show all ads seen"):
+    if st.sidebar.checkbox("Show all ads seen"):
         show_content(ads, True)
-    elif st.checkbox("Show all posts seen"):
+    elif st.sidebar.checkbox("Show all posts seen"):
         show_content(posts)
-    elif st.checkbox("Show all videos seen"):
+    elif st.sidebar.checkbox("Show all videos seen"):
         show_content(videos)
 
 def show_content(content, ads=False):
@@ -84,7 +83,6 @@ def show_content(content, ads=False):
         make_cloud(content)
 
 def make_cloud(content):
-    #st.write(content)
     text = ' '.join(content['author'])
     st.spinner(text="in progress")
     wordcloud = WordCloud(width=1500, height=1200, random_state=1,
