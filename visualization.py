@@ -119,7 +119,7 @@ def select_files():
     return files
 
 def visualize_location():
-    st.write("This is just a test for now!")
+    st.write("This is not your data. This is just a test for now!")
     df = pd.DataFrame(
         np.random.randn(1000, 2)/[50, 50] + [59.91, 10.75],
         columns=['lat', 'lon'])
