@@ -106,10 +106,10 @@ def get_user_data(files):
                     'Location data'))
     for fil in files:
         if option == 'Ads, posts and videos seen':
-            if fil.name == 'seen_content.json':
+            if fil.name == 'seen_content.json' or fil.name == 'ads_and_content.json':
                 data_list.append(fil)
         elif option == 'Your searches':
-            if fil.name == 'searches.json':
+            if fil.name == 'searches.json' or fil.name == 'recent_searches.json':
                 data_list.append(fil)
 
     return data_list, option
