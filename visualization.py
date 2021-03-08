@@ -7,6 +7,7 @@ import numpy as np
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 from pathlib import Path
+import re
 
 
 def json_reader_content(json_file):
@@ -69,11 +70,22 @@ def visualize_seen_content(json_files):
         show_content(posts)
     elif st.sidebar.checkbox("Show all videos seen"):
         show_content(videos)
+        
+def get_times(content):
+    times = content["timestamp"]
+    time1 = times.min()
+    time2 = times.max()
+    start_time = re.sub('T.*', '', time1)
+    end_time = re.sub('T.*', '', time2)
+    return start_time, end_time
 
 def show_content(content, ads=False):
+    start_time, end_time = get_times(content)
+    st.write("This data was collected between ", start_time, " and ", end_time)
     all_content = content["author"].value_counts()
-    all_content = all_content[all_content > 1]
     st.write(all_content)
+    st.write("All entries seen only 1 time in this period is NOT included in the chart.")
+    all_content = all_content[all_content > 1]
     st.set_option('deprecation.showPyplotGlobalUse', False) #TODO: REMOVE 
     if ads:
         fig = px.bar(all_content, x=all_content.index, y='author',
@@ -84,7 +96,7 @@ def show_content(content, ads=False):
     st.plotly_chart(fig)
     word_cloud = st.checkbox("Make a word cloud!")
     if word_cloud:
-        make_cloud(content)
+        make_cloud(all_content)
 
 def make_cloud(content):
     text = ' '.join(content['author'])
