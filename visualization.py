@@ -4,7 +4,7 @@ import streamlit as st
 import os
 import plotly_express as px
 import numpy as np
-from wordcloud import WordCloud, STOPWORDS
+#from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 from pathlib import Path
 import re
@@ -28,9 +28,6 @@ def json_reader_content(json_file):
         df = pd.json_normalize(data["impressions_history_videos_watched"])
         return df, "videos"
     #st.write(df)
-    """df = df.drop(labels=['title', 'string_map_data.Search.href',  
-                        'string_map_data.Search.timestamp', 'string_map_data.Time.href',
-                        'string_map_data.Time.value'], axis=1)"""
 
 def json_reader_searches(json_file):
 
@@ -38,10 +35,6 @@ def json_reader_searches(json_file):
     string_data = bytes_data.decode("utf-8")
     data = json.loads(string_data)
     df = pd.json_normalize(data["searches_user"])
-    df = df.drop(labels=['title', 'string_map_data.Search.href',  
-                        'string_map_data.Search.timestamp', 'string_map_data.Time.href'], axis=1)
-    #st.write(df)
-
     return df
 
 def visualize_searches(json_files):
@@ -57,11 +50,19 @@ def visualize_searches(json_files):
         return
     start_time, end_time = get_times(searches)
     st.write("This data was collected between ", start_time, " and ", end_time)
-    total_searches = searches["string_map_data.Search.value"].value_counts()
+    try:
+        total_searches = searches["string_map_data.Search.value"].value_counts()
+    except KeyError:
+        total_searches = searches["string_map_data.S\u00c3\u00b8k.value"].value_counts()
+
     #st.write(type(total_searches))
     st.write(total_searches)
-    fig = px.pie(total_searches, names=total_searches.index, values="string_map_data.Search.value",
-                width=800, height=800)
+    try:
+        fig = px.pie(total_searches, names=total_searches.index, values="string_map_data.Search.value",
+                 width=800, height=800)
+    except (KeyError, ValueError):
+        fig = px.pie(total_searches, names=total_searches.index, values="string_map_data.S\u00c3\u00b8k.value",
+                 width=800, height=800)
     st.plotly_chart(fig)
 
 def visualize_seen_content(json_files):
@@ -90,43 +91,45 @@ def visualize_seen_content(json_files):
         show_content(videos)
 
 def get_times(content):
-    content = content[content["string_map_data.Time.timestamp"] != 0]
-    times = pd.to_datetime(content["string_map_data.Time.timestamp"].dropna(), unit='s')
+    try:
+        content = content[content["string_map_data.Time.timestamp"] != 0]
+        times = pd.to_datetime(content["string_map_data.Time.timestamp"].dropna(), unit='s')
+    except KeyError:
+        content = content[content["string_map_data.Tidspunkt.timestamp"] != 0]
+        times = pd.to_datetime(content["string_map_data.Tidspunkt.timestamp"].dropna(), unit='s')
     return times.min(), times.max()
 
 def show_content(content, ads=False):
     start_time, end_time = get_times(content)
     st.write("This data was collected between ", start_time, " and ", end_time)
-    all_content = content["string_map_data.Author.value"].value_counts()
+    try:
+        all_content = content["string_map_data.Author.value"].value_counts()
+    except KeyError:
+        all_content = content["string_map_data.Forfatter.value"].value_counts()
+
     #st.write(all_content)
     st.write("All entries seen only 1 time in this period is NOT included in the chart.")
     all_content = all_content[all_content > 1]
     st.set_option('deprecation.showPyplotGlobalUse', False) #TODO: REMOVE 
     if ads:
-        fig = px.bar(all_content, x=all_content.index, y='string_map_data.Author.value',
-                    labels={'string_map_data.Author.value': 'Number of seen ads',
-                            'index': 'Account'},
-                    width=1000, height=800)
+        try:
+            fig = px.bar(all_content, x=all_content.index, y='string_map_data.Author.value',
+                        labels={'string_map_data.Author.value': 'Number of seen ads',
+                                'index': 'Account'},
+                        width=1000, height=800)
+        except (KeyError, ValueError):
+            fig = px.bar(all_content, x=all_content.index, y='string_map_data.Forfatter.value',
+                        labels={'string_map_data.Forfatter.value': 'Number of seen ads',
+                                'index': 'Account'},
+                        width=1000, height=800)
     else:
-        fig = px.pie(all_content, names=all_content.index, values='string_map_data.Author.value',
-                    width=800, height=800)
+        try:
+            fig = px.pie(all_content, names=all_content.index, values='string_map_data.Author.value',
+                     width=800, height=800)
+        except (KeyError, ValueError):
+            fig = px.pie(all_content, names=all_content.index, values='string_map_data.Forfatter.value',
+                     width=800, height=800)
     st.plotly_chart(fig)
-    word_cloud = st.checkbox("Make a word cloud!")
-    if word_cloud:
-        make_cloud(all_content)
-
-def make_cloud(content):
-    text = ' '.join(content['author'])
-    st.spinner(text="in progress")
-    wordcloud = WordCloud(width=1500, height=1200, random_state=1,
-                        background_color='salmon', colormap='Pastel1', collocations=False,
-                        stopwords=STOPWORDS).generate(text)
-    
-    plt.figure(figsize=(40,30))
-    plt.imshow(wordcloud)
-    plt.axis("off")
-    plt.show()
-    st.pyplot()
 
 def get_user_data(files):
     data_list = []
@@ -174,7 +177,13 @@ def show_interests(files):
             string_data = bytes_data.decode("utf-8")
             data = json.loads(string_data)
             df = pd.json_normalize(data["topics_your_topics"])
-            df = df['string_map_data.Name.value']
+            try:
+                df = df['string_map_data.Name.value']
+            except KeyError:
+                df = df['string_map_data.Navn.value']
+            #df = df.drop(labels=['title', 'string_map_data.Name.href',  
+            #                    'string_map_data.Name.timestamp'], axis=1)
+            #st.write(df)
             st.write("Instagram has a map of personalized 'interests you might have', which is based on the activity on your account. Here is a list of interests you have according to Instagram.")
             st.write(df)
 
