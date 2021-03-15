@@ -174,10 +174,8 @@ def show_interests(files):
             string_data = bytes_data.decode("utf-8")
             data = json.loads(string_data)
             df = pd.json_normalize(data["topics_your_topics"])
-            df = df.drop(labels=['title', 'string_map_data.Name.href',  
-                                'string_map_data.Name.timestamp'], axis=1)
+            df = df['string_map_data.Name.value']
             st.write("Instagram has a map of personalized 'interests you might have', which is based on the activity on your account. Here is a list of interests you have according to Instagram.")
-            df.columns = ['Interests']
             st.write(df)
 
 if __name__ == "__main__":
