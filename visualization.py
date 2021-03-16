@@ -4,7 +4,6 @@ import streamlit as st
 import os
 import plotly_express as px
 import numpy as np
-#from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 from pathlib import Path
 import re
@@ -14,10 +13,6 @@ def json_reader_content(json_file):
     bytes_data = json_file.read()
     string_data = bytes_data.decode("utf-8")
     data = json.loads(string_data)
-    #df = pd.DataFrame()
-
-    """if (len(data) == 1):
-        return"""
     if json_file.name == 'ads_viewed.json':
         df = pd.json_normalize(data["impressions_history_ads_seen"])
         return df, "ads"
@@ -27,7 +22,6 @@ def json_reader_content(json_file):
     else:
         df = pd.json_normalize(data["impressions_history_videos_watched"])
         return df, "videos"
-    #st.write(df)
 
 def json_reader_searches(json_file):
 
@@ -38,7 +32,7 @@ def json_reader_searches(json_file):
     return df
 
 def visualize_searches(json_files):
-    st.title("All your searches on instagram")
+    st.title("Your searches on instagram")
     searches = []
     for item in json_files:
         df = json_reader_searches(item)
@@ -52,43 +46,36 @@ def visualize_searches(json_files):
     st.write("This data was collected between ", start_time, " and ", end_time)
     try:
         total_searches = searches["string_map_data.Search.value"].value_counts()
+        total_searches = total_searches.to_frame()
+        total_searches = total_searches.rename(columns={'string_map_data.Search.value': 'Number of searches'})
     except KeyError:
         total_searches = searches["string_map_data.S\u00c3\u00b8k.value"].value_counts()
+        total_searches = total_searches.to_frame()
+        total_searches = total_searches.rename(columns={'string_map_data.S\u00c3\u00b8k.value': 'Number of searches'})
 
-    #st.write(type(total_searches))
     st.write(total_searches)
-    try:
-        fig = px.pie(total_searches, names=total_searches.index, values="string_map_data.Search.value",
-                 width=800, height=800)
-    except (KeyError, ValueError):
-        fig = px.pie(total_searches, names=total_searches.index, values="string_map_data.S\u00c3\u00b8k.value",
+    fig = px.pie(total_searches, names=total_searches.index, values="Number of searches",
                  width=800, height=800)
     st.plotly_chart(fig)
 
 def visualize_seen_content(json_files):
-    ads, posts, videos = [], [], []
     for item in json_files:
         df, option = json_reader_content(item)
         if option == "ads":
+            ads = []
             ads.append(df)
+            ads = pd.concat(ads)
+            show_content(ads, True)
         elif option == "posts":
+            posts = []
             posts.append(df)
+            posts = pd.concat(posts)
+            show_content(posts)
         elif option == "videos":
+            videos = []
             videos.append(df)
-    try:
-        ads = pd.concat(ads)
-        posts = pd.concat(posts)
-        videos = pd.concat(videos)
-    except ValueError:
-        st.error("Not correct file, please choose another")
-        return
-
-    if st.sidebar.checkbox("Show all ads seen"):
-        show_content(ads, True)
-    elif st.sidebar.checkbox("Show all posts seen"):
-        show_content(posts)
-    elif st.sidebar.checkbox("Show all videos seen"):
-        show_content(videos)
+            videos = pd.concat(videos)
+            show_content(videos)
 
 def get_times(content):
     try:
@@ -107,7 +94,6 @@ def show_content(content, ads=False):
     except KeyError:
         all_content = content["string_map_data.Forfatter.value"].value_counts()
 
-    #st.write(all_content)
     st.write("All entries seen only 1 time in this period is NOT included in the chart.")
     all_content = all_content[all_content > 1]
     st.set_option('deprecation.showPyplotGlobalUse', False) #TODO: REMOVE 
@@ -116,12 +102,12 @@ def show_content(content, ads=False):
             fig = px.bar(all_content, x=all_content.index, y='string_map_data.Author.value',
                         labels={'string_map_data.Author.value': 'Number of seen ads',
                                 'index': 'Account'},
-                        width=1000, height=800)
+                        width=1000, height=800, color='string_map_data.Author.value')
         except (KeyError, ValueError):
             fig = px.bar(all_content, x=all_content.index, y='string_map_data.Forfatter.value',
                         labels={'string_map_data.Forfatter.value': 'Number of seen ads',
                                 'index': 'Account'},
-                        width=1000, height=800)
+                        width=1000, height=800, color='string_map_data.Forfatter.value')
     else:
         try:
             fig = px.pie(all_content, names=all_content.index, values='string_map_data.Author.value',
@@ -133,16 +119,27 @@ def show_content(content, ads=False):
 
 def get_user_data(files):
     data_list = []
-    option = st.sidebar.selectbox('What data would like to have displayed?',
-                    ('', 'Ads, posts and videos seen', 'Your searches'))
-    if option == 'Ads, posts and videos seen':
+    option = ""
+    if st.sidebar.checkbox('Seen ads'):
         for fil in files:
-            if fil.name == "ads_viewed.json" or fil.name == 'posts_viewed.json' or fil.name == "videos_watched.json":
+            if fil.name == "ads_viewed.json":
                 data_list.append(fil)
-    elif option == 'Your searches':
+                option = 'Ads, posts and videos seen'
+    if st.sidebar.checkbox('Seen posts'):
         for fil in files:
-            if fil.name == 'account_searches.json':
+            if fil.name == "posts_viewed.json":
                 data_list.append(fil)
+                option = 'Ads, posts and videos seen'
+    if st.sidebar.checkbox('Seen videos'):
+        for fil in files:
+            if fil.name == "videos_watched.json":
+                data_list.append(fil)
+                option = 'Ads, posts and videos seen'
+    if st.sidebar.checkbox('Your searches'):
+        for fil in files:
+            if fil.name == "account_searches.json":
+                data_list.append(fil)
+                option = 'Your searches'
 
     return data_list, option
 
@@ -164,10 +161,11 @@ def inbox_statistics(files):
                     navn = "unknown"
                 dm_dict.update({navn: fil.size})
     sorted_df = pd.DataFrame.from_dict(dm_dict, orient='index')
-    st.write("This chart shows the size of your inbox with each person.")
+    st.write("This chart shows the size of your inbox with each person. It will therefore give you an idea of who you have conversed most with.")
     fig = px.bar(sorted_df, width=1000, height=800,
-                labels={'value': 'Filesize of each inbox',
-                        'index': 'Account'})
+                labels={'value': 'Filesize of each inbox (KB)',
+                        'index': 'Account'},
+                color="value").update_xaxes(categoryorder='total descending')
     st.plotly_chart(fig)     
 
 def show_interests(files):
@@ -179,11 +177,12 @@ def show_interests(files):
             df = pd.json_normalize(data["topics_your_topics"])
             try:
                 df = df['string_map_data.Name.value']
+                df = df.to_frame()
+                df = df.rename(columns={'string_map_data.Name.value': 'Interests'})
             except KeyError:
                 df = df['string_map_data.Navn.value']
-            #df = df.drop(labels=['title', 'string_map_data.Name.href',  
-            #                    'string_map_data.Name.timestamp'], axis=1)
-            #st.write(df)
+                df = df.to_frame()
+                df = df.rename(columns={'string_map_data.Navn.value': 'Interests'})
             st.write("Instagram has a map of personalized 'interests you might have', which is based on the activity on your account. Here is a list of interests you have according to Instagram.")
             st.write(df)
 
