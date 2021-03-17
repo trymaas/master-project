@@ -28,6 +28,7 @@ def json_reader_searches(json_file):
     bytes_data = json_file.read()
     string_data = bytes_data.decode("utf-8")
     data = json.loads(string_data)
+    #st.write(data)
     df = pd.json_normalize(data["searches_user"])
     return df
 
@@ -119,23 +120,24 @@ def show_content(content, ads=False):
 
 def get_user_data(files):
     data_list = []
-    option = ""
-    if st.sidebar.checkbox('Seen ads'):
+    option = st.sidebar.radio("What data would you like to see?",
+                    ("Seen ads", "Seen posts", "Seen videos", "Your searches"))
+    if option == 'Seen ads':
         for fil in files:
             if fil.name == "ads_viewed.json":
                 data_list.append(fil)
                 option = 'Ads, posts and videos seen'
-    if st.sidebar.checkbox('Seen posts'):
+    if option == 'Seen posts':
         for fil in files:
             if fil.name == "posts_viewed.json":
                 data_list.append(fil)
                 option = 'Ads, posts and videos seen'
-    if st.sidebar.checkbox('Seen videos'):
+    if option == 'Seen videos':
         for fil in files:
             if fil.name == "videos_watched.json":
                 data_list.append(fil)
                 option = 'Ads, posts and videos seen'
-    if st.sidebar.checkbox('Your searches'):
+    if option == 'Your searches':
         for fil in files:
             if fil.name == "account_searches.json":
                 data_list.append(fil)
@@ -199,12 +201,16 @@ if __name__ == "__main__":
     st.write("See sidebar to the left for options")
     st.write("Your plots will appear below.")
     data_list, option = get_user_data(files)
-    if st.sidebar.checkbox("Inferred interests"):
-        show_interests(files)
-    if st.sidebar.checkbox("See inbox statistics"):
-        inbox_statistics(files)
+    choice = st.sidebar.radio("Maybe these are more interesting?",
+                        ('Inferred interests', 'See inbox statistics'))
 
     if option == 'Ads, posts and videos seen':
         visualize_seen_content(data_list)
-    elif option == 'Your searches':
+    if option == 'Your searches':
         visualize_searches(data_list)
+
+    if choice == 'Inferred interests':
+        show_interests(files)
+    if choice == 'See inbox statistics':
+        inbox_statistics(files)
+
